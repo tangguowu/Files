@@ -1,0 +1,162 @@
+package com.tangfen.sugerexplore;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import android.app.Activity;
+import android.content.ClipData.Item;
+import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
+import android.view.Menu;
+import android.view.View;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView;
+import android.widget.ListView;
+import android.widget.SimpleAdapter;
+import android.widget.TextView;
+import android.widget.Toast;
+
+public class MainActivity extends Activity {
+	private static final String TAG = "MainActivity";
+	private static final String FILEICON = "fileicon";
+	private static final String FILENAME = "filename";
+	private static final String FILEATTR = "fileattr";
+	private ListView fileLv;
+	private TextView pathTv;
+	private TextView fileTv;
+	private TextView fileAttr;
+	private SimpleAdapter adapter;
+	private List<Map<String,Object>> data;
+	private File  file;
+	
+	//页面数据栈？？？？？？？？？？？？？？？
+	private LinkedList<List<Map<String, Object>>> pageStack;
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
+		
+		pageStack = new LinkedList<List<Map<String, Object>>>(); 
+		prepareUi();
+	}
+
+	private void prepareUi() {
+		// TODO Auto-generated method stub
+		fileLv = (ListView) findViewById(R.id.listviewLv);
+		pathTv =(TextView) findViewById(R.id.pathTv);
+		fileTv = (TextView) findViewById(R.id.filename);
+		fileAttr = (TextView) findViewById(R.id.fileAttr);
+		file = Environment.getExternalStorageDirectory();
+		data = getfileList(file);
+		pageStack.addAll(data);
+		listfile(data);
+		
+		//1. 确定文件和文件夹
+		//2. 
+		fileLv.setOnItemClickListener(new OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View v, int arg2,
+					long arg3) {
+				// TODO Auto-generated method stub
+//				Log.i(TAG, v.getFocusables(arg2).toString());
+				Log.i(TAG, "----->   "+data.get(arg2).toString());
+				String filename = v.findViewById(R.id.filename).getText();
+				//若点击的是父目录，则返回，若不是，则继续往下进行
+				if(arg2 == 0 && filename.equals("父目录")){
+					data.clear();
+					tata = pageStack.getLast();
+
+				}else{
+					String filepath = file + "/"+filename;
+					data = getfileList(new File(filepath);
+					pageStack.addAll(data); 
+					
+				}
+				listfile(data);
+/*				List<Map<String , Object>> list = new ArrayList<Map<String,Object>>();
+				Map<String,Object> map = data.get(arg2);
+//				Map<String,Object> map = new HashMap<String, Object>();
+				map.put(FILEICON, R.drawable.folder);
+				map.put(FILENAME, "父目录");
+				
+				map.put(FILEATTR, "...");
+				list.add(map); */
+				////***********************
+			
+			}
+		});
+//		Map<String,Object> map = new HashMap<String, Object>();
+		
+		
+				
+	}
+	//列出该目录下的文件
+	private void listfile(List<Map<String, Object>> data){
+
+		adapter = new SimpleAdapter(this, data, R.layout.file_item_3,
+				new String[]{FILEICON,FILENAME,FILEATTR},
+				new int[]{R.id.fileIcon,R.id.filename,R.id.fileAttr});
+		
+		fileLv.setAdapter(adapter);
+	}
+	
+	//返回该目录下的所有文件
+	private List<Map<String, Object>> getfileList(File file) {
+		int iconId = 0;
+		List<Map<String , Object>> list = new ArrayList<Map<String,Object>>();
+		//检查存储介质可用性
+		if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)){
+			
+			/*
+			 * 路径： /storage/sdcard
+			 */
+			Log.i(TAG, "--------dir----->"+Environment.getExternalStorageDirectory());
+			///*****************
+			File[] files = file.listFiles();
+			//若不是文件夹，或者不是根目录，则添加父目录，返回
+			if(files == null || !file.equals(Environment.getExternalStorageDirectory())){
+				Map<String,Object> map = new HashMap<String, Object>();
+				map.put(FILEICON, iconId);
+				map.put(FILENAME, "父目录");
+				
+				map.put(FILEATTR, "...");
+				list.add(map);
+				if(files == null){
+					return list;	
+				}
+				
+			}
+			for(File f:files){
+				///*********
+				Map<String,Object> map = new HashMap<String, Object>();
+				if(f.isDirectory()){
+					iconId = R.drawable.folder;
+				}else if(f.isFile()){
+					iconId = R.drawable.default2;
+				}
+				map.put(FILEICON, iconId);
+				map.put(FILENAME, f.getName());
+				
+				Log.i(TAG, "-------filename------>"+f.getName());
+				map.put(FILEATTR, (new Date(f.lastModified())).toString()+ "  "+f.length());
+				list.add(map);
+			}
+		}else{
+			Toast.makeText(this, "存储介质不可用", Toast.LENGTH_LONG).show();
+		}
+		return list;
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.main, menu);
+		return true;
+	}
+
+}
